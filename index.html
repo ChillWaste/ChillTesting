@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>Generator</title>
 
     <style>
@@ -10,108 +11,179 @@
             box-sizing: border-box;
         }
 
+        html,
         body {
             margin: 0;
+            width: 100%;
+            min-height: 100%;
+        }
+
+        body {
             min-height: 100vh;
             display: flex;
-            align-items: center;
             justify-content: center;
+            align-items: center;
+
             background: #111827;
-            font-family: Arial, sans-serif;
-            color: white;
+            color: #ffffff;
+
+            font-family: Arial, Helvetica, sans-serif;
         }
 
         .container {
-            width: min(500px, 90%);
-            text-align: center;
+            width: min(500px, 90vw);
             padding: 40px;
+
+            text-align: center;
+
             background: #1f2937;
             border-radius: 16px;
-            box-shadow: 0 10px 40px rgba(0,0,0,.35);
+
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35);
         }
 
         h1 {
-            margin-top: 0;
+            margin: 0 0 25px;
+            font-size: 32px;
         }
 
-        button {
-            border: 0;
+        #generate {
+            border: none;
             border-radius: 8px;
-            padding: 12px 28px;
+
+            padding: 13px 30px;
+
+            background: #ffffff;
+            color: #111827;
+
             font-size: 16px;
+            font-weight: bold;
+
             cursor: pointer;
         }
 
-        button:disabled {
+        #generate:hover {
+            opacity: 0.9;
+        }
+
+        #generate:disabled {
+            opacity: 0.55;
             cursor: wait;
-            opacity: .6;
         }
 
         #result {
-            margin-top: 25px;
-            text-align: left;
-            word-break: break-word;
+            width: 100%;
+            margin-top: 30px;
+
+            text-align: center;
             line-height: 1.7;
+
+            overflow-wrap: anywhere;
+        }
+
+        #result p {
+            margin: 10px 0;
+        }
+
+        #result a {
+            color: #ffffff;
         }
 
         .error {
-            color: #ff8080;
+            color: #ff8a8a;
+        }
+
+        .loading {
+            opacity: 0.8;
         }
     </style>
 </head>
 
 <body>
 
-<div class="container">
-    <h1>Generator</h1>
+    <main class="container">
 
-    <button id="generate">Generate</button>
+        <h1>Generator</h1>
 
-    <div id="result"></div>
-</div>
+        <button id="generate" type="button">
+            Generate
+        </button>
 
-<script>
-const button = document.getElementById("generate");
-const result = document.getElementById("result");
+        <div id="result"></div>
 
-button.addEventListener("click", async () => {
-    button.disabled = true;
-    button.textContent = "Generating...";
-    result.textContent = "";
+    </main>
 
-    try {
-        const response = await fetch("YOUR_BACKEND_URL/generate", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
+    <script>
+        // Replace this with the actual HTTPS address of your backend.
+        const BACKEND_URL = "https://YOUR-BACKEND-URL";
+
+        const button = document.getElementById("generate");
+        const result = document.getElementById("result");
+
+        button.addEventListener("click", async () => {
+
+            button.disabled = true;
+            button.textContent = "Generating...";
+
+            result.innerHTML = `
+                <p class="loading">Please wait...</p>
+            `;
+
+            try {
+                const response = await fetch(
+                    `${BACKEND_URL}/generate`,
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        }
+                    }
+                );
+
+                if (!response.ok) {
+                    throw new Error(
+                        `Backend returned HTTP ${response.status}`
+                    );
+                }
+
+                const data = await response.json();
+
+                result.innerHTML = `
+                    <p>
+                        <strong>Result:</strong>
+                        ${escapeHtml(data.result ?? "Completed")}
+                    </p>
+                `;
+
+            } catch (error) {
+
+                console.error(error);
+
+                result.innerHTML = `
+                    <p class="error">
+                        Unable to contact the backend.
+                    </p>
+                    <p class="error">
+                        ${escapeHtml(error.message)}
+                    </p>
+                `;
+
+            } finally {
+
+                button.disabled = false;
+                button.textContent = "Generate";
             }
         });
 
-        if (!response.ok) {
-            throw new Error(`Server returned ${response.status}`);
+        function escapeHtml(value) {
+            return String(value)
+                .replaceAll("&", "&amp;")
+                .replaceAll("<", "&lt;")
+                .replaceAll(">", "&gt;")
+                .replaceAll('"', "&quot;")
+                .replaceAll("'", "&#039;");
         }
-
-        const data = await response.json();
-
-        result.innerHTML = `
-            <p><strong>Result:</strong> ${data.result ?? "Completed"}</p>
-        `;
-
-    } catch (error) {
-        console.error(error);
-
-        result.innerHTML = `
-            <p class="error">
-                Could not contact the backend.<br>
-                ${error.message}
-            </p>
-        `;
-    } finally {
-        button.disabled = false;
-        button.textContent = "Generate";
-    }
-});
-</script>
+    </script>
 
 </body>
 </html>

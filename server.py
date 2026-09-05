@@ -1,28 +1,28 @@
 from flask import Flask, jsonify
+from flask_cors import CORS
 import subprocess
-import re
+import sys
 
 app = Flask(__name__)
+
+CORS(app, origins=["https://chillwaste.github.io"])
 
 @app.route("/generate", methods=["POST"])
 def generate():
     result = subprocess.run(
-        ["python", "main.py"],
+        [sys.executable, "your_safe_script.py"],
         capture_output=True,
         text=True,
         timeout=120
     )
 
-    output = result.stdout
-
-    link = re.search(r"Activation link:\s*(\S+)", output)
-    code = re.search(r"Activation code:\s*(\S+)", output)
-    expiry = re.search(r"Your evaluation will expire.*", output)
+    if result.returncode != 0:
+        return jsonify({
+            "error": result.stderr or "Script failed"
+        }), 500
 
     return jsonify({
-        "link": link.group(1) if link else None,
-        "code": code.group(1) if code else None,
-        "expiry": expiry.group(0) if expiry else None
+        "result": result.stdout
     })
 
 app.run(host="0.0.0.0", port=5000)
